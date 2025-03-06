@@ -1,7 +1,6 @@
 import os
-import cupy as cp
 import numpy as np
-import mkl_fft
+# import mkl_fft
 from scipy import signal
 import torch
 import math
@@ -110,15 +109,16 @@ class RadarSignalProcessing():
         
         self.device = device
         if(self.device =='cuda'):
-            if(self.lib=='CuPy'):
-                print('CuPy on GPU will be used to execute the processing')
-                cp.cuda.Device(0).use()
-                self.CalibMat = cp.array(self.CalibMat,dtype='complex64')
-                self.window = cp.array(self.AoA_mat['H'][0])
-            else:
-                print('PyTorch on GPU will be used to execute the processing')
-                self.CalibMat = torch.from_numpy(self.CalibMat).to('cuda')
-                self.window = torch.from_numpy(self.AoA_mat['H'][0]).to('cuda')
+            print('old computer have no GPUs')
+            # if(self.lib=='CuPy'):
+            #     print('CuPy on GPU will be used to execute the processing')
+            #     cp.cuda.Device(0).use()
+            #     self.CalibMat = cp.array(self.CalibMat,dtype='complex64')
+            #     self.window = cp.array(self.AoA_mat['H'][0])
+            # else:
+            #     print('PyTorch on GPU will be used to execute the processing')
+            #     self.CalibMat = torch.from_numpy(self.CalibMat).to('cuda')
+            #     self.window = torch.from_numpy(self.AoA_mat['H'][0]).to('cuda')
             
         else:
             print('CPU will be used to execute the processing')
@@ -142,10 +142,12 @@ class RadarSignalProcessing():
         complex_adc = complex_adc - np.mean(complex_adc, axis=(0,1))
 
         # 3- Range FFTs
-        range_fft = mkl_fft.fft(np.multiply(complex_adc,self.range_fft_coef),self.numSamplePerChirp,axis=0)
+        # range_fft = mkl_fft.fft(np.multiply(complex_adc,self.range_fft_coef),self.numSamplePerChirp,axis=0)
+        range_fft = np.fft.fft(np.multiply(complex_adc,self.range_fft_coef),self.numSamplePerChirp,axis=0)
     
         # 4- Doppler FFts
-        RD_spectrums = mkl_fft.fft(np.multiply(range_fft,self.doppler_fft_coef),self.numChirps,axis=1)
+        # RD_spectrums = mkl_fft.fft(np.multiply(range_fft,self.doppler_fft_coef),self.numChirps,axis=1)
+        RD_spectrums = np.fft.fft(np.multiply(range_fft,self.doppler_fft_coef),self.numChirps,axis=1)
 
         if(self.method=='RD'):
             return RD_spectrums
@@ -223,26 +225,23 @@ class RadarSignalProcessing():
             return RA_map.transpose()
 
         else:   
-            
-            if(self.lib=='CuPy'):
-                MIMO_Spectrum = cp.array(MIMO_Spectrum)
-                # Multiply with Hamming window to reduce side lobes
-                MIMO_Spectrum = cp.multiply(MIMO_Spectrum,self.window).transpose()
-                Azimuth_spec = cp.abs(cp.dot(self.CalibMat,MIMO_Spectrum))
-                Azimuth_spec = Azimuth_spec.reshape(self.AoA_mat['Signal'].shape[0],RD_spectrums.shape[0],RD_spectrums.shape[1])
-                RA_map = np.sum(np.abs(Azimuth_spec),axis=2)
-
-                return RA_map.transpose().get()
-            else:
-            
-                MIMO_Spectrum = torch.from_numpy(MIMO_Spectrum).to('cuda')
-                # Multiply with Hamming window to reduce side lobes
-                MIMO_Spectrum = torch.transpose(torch.multiply(MIMO_Spectrum,self.window),1,0).cfloat()
-                Azimuth_spec = torch.abs(torch.matmul(self.CalibMat,MIMO_Spectrum))
-                Azimuth_spec = Azimuth_spec.reshape(self.AoA_mat['Signal'].shape[0],RD_spectrums.shape[0],RD_spectrums.shape[1])
-                RA_map = torch.sum(torch.abs(Azimuth_spec),axis=2)
-
-                return RA_map.detach().cpu().numpy().transpose()
+            print('old computer have no GPUs')
+            # if(self.lib=='CuPy'):
+            #     MIMO_Spectrum = cp.array(MIMO_Spectrum)
+            #     # Multiply with Hamming window to reduce side lobes
+            #     MIMO_Spectrum = cp.multiply(MIMO_Spectrum,self.window).transpose()
+            #     Azimuth_spec = cp.abs(cp.dot(self.CalibMat,MIMO_Spectrum))
+            #     Azimuth_spec = Azimuth_spec.reshape(self.AoA_mat['Signal'].shape[0],RD_spectrums.shape[0],RD_spectrums.shape[1])
+            #     RA_map = np.sum(np.abs(Azimuth_spec),axis=2)
+            #     return RA_map.transpose().get()
+            # else:
+            #     MIMO_Spectrum = torch.from_numpy(MIMO_Spectrum).to('cuda')
+            #     # Multiply with Hamming window to reduce side lobes
+            #     MIMO_Spectrum = torch.transpose(torch.multiply(MIMO_Spectrum,self.window),1,0).cfloat()
+            #     Azimuth_spec = torch.abs(torch.matmul(self.CalibMat,MIMO_Spectrum))
+            #     Azimuth_spec = Azimuth_spec.reshape(self.AoA_mat['Signal'].shape[0],RD_spectrums.shape[0],RD_spectrums.shape[1])
+            #     RA_map = torch.sum(torch.abs(Azimuth_spec),axis=2)
+            #     return RA_map.detach().cpu().numpy().transpose()
         
                 
     def __find_TX0_position(self,power_spectrum,range_bins,reduced_doppler_bins):        

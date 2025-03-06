@@ -58,8 +58,6 @@ class RADIal(Dataset):
 
         # Read the Radar FFT data
         radar_name = os.path.join(self.root_dir,'radar_FFT',"fft_{:06d}.npy".format(sample_id))
-        # test
-        print('radar name:', radar_name)
         input = np.load(radar_name)
         radar_FFT = np.concatenate([input.real,input.imag],axis=2)
        
