@@ -25,7 +25,8 @@ def ConpensateLayerAngle(pcl,index,sensor_height):
     
     return pcl
 
-
+radar_height = 0.8
+lidar_height = 0.42
 
 root_folder = 'D:/RADIal_Project/RADIal/raw_sequences/RECORD@2020-11-22_12.28.47'
 db = SyncReader(root_folder,tolerance=40000)
@@ -52,7 +53,7 @@ El = pc[:,3]
 El_cos = np.cos(El)
 radar_pts[:,0] = R*El_cos*np.cos(Az)    # x
 radar_pts[:,1] = R*El_cos*np.sin(Az)    # y
-radar_pts[:,2] = R*np.sin(El) + 0.42          # Z
+radar_pts[:,2] = R*np.sin(El) + radar_height         # Z
 radar_pts[:,3] = pc[:,1]                # V
 
 
@@ -60,7 +61,7 @@ radar_pts[:,3] = pc[:,1]                # V
 pts = sample['scala']['data']
 # Load the camera calibration parameters
 calib = np.load('D:/RADIal_Project/DBReader/examples/camera_calib.npy',allow_pickle=True).item()
-pts = ConpensateLayerAngle(pts,sample['scala']['sample_number'],0.42)[:,:3]
+pts = ConpensateLayerAngle(pts,sample['scala']['sample_number'],lidar_height)[:,:3]
 pts[:,[0, 1, 2]] = pts[:,[1, 0,2]] # Swap the order
 pts[:,0]*=-1 # Left is positive
 plt.figure(figsize=(10,10))
