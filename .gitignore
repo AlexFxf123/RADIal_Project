@@ -1,3 +1,7 @@
-/RADIAl
-/Scripts_generate_RADIal_from_raw_sequences
 *.pyc
+# 训练中间过程和代码
+FFTRadNet/outputs/    
+# 训练好的模型，可用于继续训练
+FFTRadNet/trained_model
+# 从原始数据生成可用的数据集
+generate_RADIal_from_raw_sequences/

@@ -215,9 +215,9 @@ def main(config, resume):
 if __name__=='__main__':
     # PARSE THE ARGS
     parser = argparse.ArgumentParser(description='FFTRadNet Training')
-    parser.add_argument('-c', '--config', default='config.json',type=str,
+    parser.add_argument('-c', '--config', default='./config/config_FFTRadNet_192_56.json',type=str,
                         help='Path to the config file (default: config.json)')
-    parser.add_argument('-r', '--resume', default=None, type=str,
+    parser.add_argument('-r', '--resume', default='./trained_model/model_epoch5.pth', type=str,
                         help='Path to the .pth model checkpoint to resume training')
 
     args = parser.parse_args()

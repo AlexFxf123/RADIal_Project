@@ -9,7 +9,7 @@
         "SegmentationHead": "True"
     },
     "dataset": {
-        "root_dir": "/media/julien/HD_RADAR1/FinalDataset/radar_v1/RADIal/",
+        "root_dir": "/home/fxf/data/RADIal_DataSet/ready_to_use",
         "geometry":{
             "ranges": [512,896,1],
             "resolution": [0.201171875,0.2],
@@ -46,7 +46,7 @@
     "optimizer": {
         "lr": 1e-4
     },
-    "num_epochs":100,
+    "num_epochs":50,
     "dataloader": {
         "mode":"sequence",
         "split":[0.7,0.15,0.15],
@@ -64,6 +64,6 @@
         }
     },
     "output": {
-	"dir": "../"
+	"dir": "./outputs"                        
     }
 }
