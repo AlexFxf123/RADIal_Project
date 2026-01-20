@@ -1,9 +1,11 @@
 import os
 import numpy as np
 # import mkl_fft
+import cupy as cp
 from scipy import signal
 import torch
 import math
+import time
 
 class CA_CFAR():
     """
@@ -75,6 +77,7 @@ class CA_CFAR():
     
 
 class RadarSignalProcessing():
+    "雷达信号处理类，分别使用cpu和cuda做信号处理算法"
     def __init__(self,path_calib_mat,method='PC',device='cpu',lib='CuPy'):
             
         # Radar parameters
@@ -109,16 +112,15 @@ class RadarSignalProcessing():
         
         self.device = device
         if(self.device =='cuda'):
-            print('old computer have no GPUs')
-            # if(self.lib=='CuPy'):
-            #     print('CuPy on GPU will be used to execute the processing')
-            #     cp.cuda.Device(0).use()
-            #     self.CalibMat = cp.array(self.CalibMat,dtype='complex64')
-            #     self.window = cp.array(self.AoA_mat['H'][0])
-            # else:
-            #     print('PyTorch on GPU will be used to execute the processing')
-            #     self.CalibMat = torch.from_numpy(self.CalibMat).to('cuda')
-            #     self.window = torch.from_numpy(self.AoA_mat['H'][0]).to('cuda')
+            if(self.lib=='CuPy'):                   # 这里使用cupy库来做GPU并行运算
+                print('CuPy on GPU will be used to execute the processing')
+                cp.cuda.Device(0).use()
+                self.CalibMat = cp.array(self.CalibMat,dtype='complex64')
+                self.window = cp.array(self.AoA_mat['H'][0])
+            else:                                   # 这里使用pytorch来做GPU并行运算
+                print('PyTorch on GPU will be used to execute the processing')
+                self.CalibMat = torch.from_numpy(self.CalibMat).to('cuda')
+                self.window = torch.from_numpy(self.AoA_mat['H'][0]).to('cuda')
             
         else:
             print('CPU will be used to execute the processing')
@@ -214,34 +216,42 @@ class RadarSignalProcessing():
         MIMO_Spectrum = RD_spectrums[:,doppler_indexes,:].reshape(RD_spectrums.shape[0]*RD_spectrums.shape[1],-1)
 
         if(self.device=='cpu'):
+            start = time.time()
             # Multiply with Hamming window to reduce side lobes
             MIMO_Spectrum = np.multiply(MIMO_Spectrum,self.window)
-
             Azimuth_spec = np.abs(self.CalibMat@MIMO_Spectrum.transpose())
-            Azimuth_spec = Azimuth_spec.reshape(self.AoA_mat['Signal'].shape[0],RD_spectrums.shape[0],RD_spectrums.shape[1])
+            end = time.time()
+            print('cpu process time: ', (end-start))
 
+            Azimuth_spec = Azimuth_spec.reshape(self.AoA_mat['Signal'].shape[0],RD_spectrums.shape[0],RD_spectrums.shape[1])
             RA_map = np.sum(np.abs(Azimuth_spec),axis=2)
-                    
             return RA_map.transpose()
 
         else:   
-            print('old computer have no GPUs')
-            # if(self.lib=='CuPy'):
-            #     MIMO_Spectrum = cp.array(MIMO_Spectrum)
-            #     # Multiply with Hamming window to reduce side lobes
-            #     MIMO_Spectrum = cp.multiply(MIMO_Spectrum,self.window).transpose()
-            #     Azimuth_spec = cp.abs(cp.dot(self.CalibMat,MIMO_Spectrum))
-            #     Azimuth_spec = Azimuth_spec.reshape(self.AoA_mat['Signal'].shape[0],RD_spectrums.shape[0],RD_spectrums.shape[1])
-            #     RA_map = np.sum(np.abs(Azimuth_spec),axis=2)
-            #     return RA_map.transpose().get()
-            # else:
-            #     MIMO_Spectrum = torch.from_numpy(MIMO_Spectrum).to('cuda')
-            #     # Multiply with Hamming window to reduce side lobes
-            #     MIMO_Spectrum = torch.transpose(torch.multiply(MIMO_Spectrum,self.window),1,0).cfloat()
-            #     Azimuth_spec = torch.abs(torch.matmul(self.CalibMat,MIMO_Spectrum))
-            #     Azimuth_spec = Azimuth_spec.reshape(self.AoA_mat['Signal'].shape[0],RD_spectrums.shape[0],RD_spectrums.shape[1])
-            #     RA_map = torch.sum(torch.abs(Azimuth_spec),axis=2)
-            #     return RA_map.detach().cpu().numpy().transpose()
+            if(self.lib=='CuPy'):
+                start = time.time()
+                MIMO_Spectrum = cp.array(MIMO_Spectrum)
+                # Multiply with Hamming window to reduce side lobes
+                MIMO_Spectrum = cp.multiply(MIMO_Spectrum,self.window).transpose()
+                Azimuth_spec = cp.abs(cp.dot(self.CalibMat,MIMO_Spectrum))
+                end = time.time()
+                print('cupy process time: ', (end-start))
+
+                Azimuth_spec = Azimuth_spec.reshape(self.AoA_mat['Signal'].shape[0],RD_spectrums.shape[0],RD_spectrums.shape[1])
+                RA_map = np.sum(np.abs(Azimuth_spec),axis=2)
+                return RA_map.transpose().get()
+            else:
+                start = time.time()
+                MIMO_Spectrum = torch.from_numpy(MIMO_Spectrum).to('cuda')
+                # Multiply with Hamming window to reduce side lobes
+                MIMO_Spectrum = torch.transpose(torch.multiply(MIMO_Spectrum,self.window),1,0).cfloat()
+                Azimuth_spec = torch.abs(torch.matmul(self.CalibMat,MIMO_Spectrum))
+                end = time.time()
+                print('pytroch process time: ', (end-start))
+
+                Azimuth_spec = Azimuth_spec.reshape(self.AoA_mat['Signal'].shape[0],RD_spectrums.shape[0],RD_spectrums.shape[1])
+                RA_map = torch.sum(torch.abs(Azimuth_spec),axis=2)
+                return RA_map.detach().cpu().numpy().transpose()
         
                 
     def __find_TX0_position(self,power_spectrum,range_bins,reduced_doppler_bins):        
