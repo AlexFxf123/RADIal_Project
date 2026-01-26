@@ -46,7 +46,7 @@
     "optimizer": {
         "lr": 1e-4
     },
-    "num_epochs":50,
+    "num_epochs":100,
     "dataloader": {
         "mode":"sequence",
         "split":[0.7,0.15,0.15],
