@@ -5,3 +5,5 @@ FFTRadNet/outputs/
 FFTRadNet/trained_model
 # 从原始数据生成可用的数据集
 generate_RADIal_from_raw_sequences/
+# 测试数据
+SignalProcessing/test_data/
