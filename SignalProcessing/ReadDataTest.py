@@ -7,7 +7,7 @@ import cv2
 from rpl import RadarSignalProcessing
 import sys
 # 导入DBReader的目录
-sys.path.append('D:/RADIal_Project/DBReader')
+sys.path.append('/home/fxf/projects/RADIal_Project/DBReader')
 from DBReader.DBReader import SyncReader
 def ConpensateLayerAngle(pcl,index,sensor_height):
     
@@ -28,7 +28,7 @@ def ConpensateLayerAngle(pcl,index,sensor_height):
 radar_height = 0.8
 lidar_height = 0.42
 
-root_folder = 'D:/RADIal_Project/RADIal/raw_sequences/RECORD@2020-11-22_12.28.47'
+root_folder = '/home/fxf/data/RADIal_DataSet/raw_sequences/RECORD@2020-11-22_12.28.47'
 db = SyncReader(root_folder,tolerance=40000)
 
 sample = db.GetSensorData(68)
@@ -38,12 +38,9 @@ image = sample['camera']['data']
 plt.figure(figsize=(10,10))
 plt.imshow(image)
 
+RSP = RadarSignalProcessing('/home/fxf/projects/RADIal_Project/SignalProcessing/CalibrationTable.npy',method='PC')
 
-
-
-RSP = RadarSignalProcessing('D:/RADIal_Project/SignalProcessing/CalibrationTable.npy',method='PC')
-
-pc=RSP.run(sample['radar_ch0']['data'],sample['radar_ch1']['data'],sample['radar_ch2']['data'],sample['radar_ch3']['data'])
+pc = RSP.run(sample['radar_ch0']['data'],sample['radar_ch1']['data'],sample['radar_ch2']['data'],sample['radar_ch3']['data'])
 
 # PC = [Range,Doppler,Azimuth,Elevation] m, m/s, rad, rad
 radar_pts = pc
@@ -60,7 +57,7 @@ radar_pts[:,3] = pc[:,1]                # V
 # Get the laser point cloud
 pts = sample['scala']['data']
 # Load the camera calibration parameters
-calib = np.load('D:/RADIal_Project/DBReader/examples/camera_calib.npy',allow_pickle=True).item()
+calib = np.load('/home/fxf/projects/RADIal_Project/DBReader/examples/camera_calib.npy',allow_pickle=True).item()
 pts = ConpensateLayerAngle(pts,sample['scala']['sample_number'],lidar_height)[:,:3]
 pts[:,[0, 1, 2]] = pts[:,[1, 0,2]] # Swap the order
 pts[:,0]*=-1 # Left is positive
